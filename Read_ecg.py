@@ -49,15 +49,23 @@ def read_adc():
     
     # Pulse START to begin conversion
     GPIO.output(START, GPIO.HIGH)
+    GPIO.output(CLOCK, GPIO.HIGH)
     time.sleep(0.000001)
     GPIO.output(START, GPIO.LOW)
     
-    # Wait for EOC (End of Conversion) to go high
-    timeout = time.time() + 0.01  # 10ms timeout
-    while GPIO.input(EOC) == GPIO.LOW:
-        if time.time() > timeout:
-            print("ADC conversion timeout!")
-            return None
+    # Generate clock pulses during conversion (ADC0808 needs ~64 clock cycles)
+    for _ in range(100):
+        GPIO.output(CLOCK, GPIO.HIGH)
+        time.sleep(0.000001)
+        GPIO.output(CLOCK, GPIO.LOW)
+        time.sleep(0.000001)
+        
+        # Check if conversion is complete
+        if GPIO.input(EOC) == GPIO.HIGH:
+            break
+    else:
+        print("ADC conversion timeout!")
+        return None
     
     # Set OUTEN high to enable output
     GPIO.output(OUTEN, GPIO.HIGH)
