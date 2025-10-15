@@ -21,11 +21,11 @@ GPIO.setup(START_PIN, GPIO.OUT)
 GPIO.setup(OE_PIN, GPIO.OUT)
 GPIO.setup(EOC_PIN, GPIO.IN)
 
-def pulse(pin):
+def pulse(pin, delay=0.00001):
     GPIO.output(pin, GPIO.HIGH)
-    time.sleep(0.00001)  # 10us pulse width, adjust if needed
+    time.sleep(delay)
     GPIO.output(pin, GPIO.LOW)
-    time.sleep(0.00001)
+    time.sleep(delay)
 
 def read_adc():
     # Start conversion sequence
@@ -40,12 +40,16 @@ def read_adc():
     time.sleep(0.00001)
     GPIO.output(START_PIN, GPIO.LOW)
 
-    # 3. Wait for EOC (End of Conversion) to go LOW (conversion complete)
+    # 3. Wait for EOC to go LOW (conversion complete) with timeout
+    timeout = time.time() + 0.1  # 100 ms timeout
     while GPIO.input(EOC_PIN) == GPIO.HIGH:
-        time.sleep(0.000001)
+        if time.time() > timeout:
+            print("Timeout waiting for EOC to go LOW")
+            return None
 
     # 4. Enable output (OE)
     GPIO.output(OE_PIN, GPIO.LOW)
+    time.sleep(0.00001)  # short delay to allow outputs to stabilize
 
     # 5. Read 8 data bits from D0-D7
     value = 0
@@ -61,10 +65,14 @@ def read_adc():
 try:
     GPIO.output(OE_PIN, GPIO.HIGH)  # Disable output initially
     GPIO.output(CLK_PIN, GPIO.LOW)
-
     print("Starting ADC reading... Press Ctrl+C to stop.")
+
     while True:
         val = read_adc()
+        if val is None:
+            print("Failed to read ADC (no EOC signal). Retrying...")
+            time.sleep(0.1)
+            continue
         print(f"ADC Value: {val} (0x{val:02X})")
         time.sleep(0.01)  # 10 ms delay, adjust as needed
 
