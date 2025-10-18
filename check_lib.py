@@ -1,7 +1,6 @@
 packages = [
-    'numpy', 'pandas', 'matplotlib', 'scipy', 'pywt', 'joblib', 'glob', 'warnings'
+    'numpy', 'pandas', 'matplotlib', 'scipy', 'pywt', 'joblib', 'adafruit_ads1x15'
 ]
-
 for pkg in packages:
     try:
         __import__(pkg)
